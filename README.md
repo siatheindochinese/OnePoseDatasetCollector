@@ -59,3 +59,5 @@ Save the image, the corresponding intrinsic matrix and the pose by pressing `spa
 
 Your dataset is saved in `out/datasets/`.
 
+## Acknowledgement
+Most of the functions in `utils.py` used for cropping and obtaining post-crop intrinsics are taken from the [original OnePose repository](https://github.com/zju3dv/OnePose).
