@@ -47,7 +47,8 @@ ml = cfg['ml']
 ids = cfg['ids']
 charucodict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 board = cv2.aruco.CharucoBoard((3,3),sl,ml,charucodict,np.array([ids]))
-origin_offset = np.array([[-300,-300,0]])
+axis_offset = -int(sl * 3/2)
+origin_offset = np.array([[axis_offset,axis_offset,0]])
 Rx180 = np.array([[ 1, 0,  0],
 				  [ 0 ,-1, 0],
 				  [ 0 , 0, -1]])
@@ -67,6 +68,7 @@ if intrin_name[-5:] != '.txt':
 intrin_pth = os.path.join(os.getcwd(), 'configs', 'intrin', cfg_name)
 K_full = np.loadtxt
 K_full = np.loadtxt('configs/intrin/intrin_ps3.txt')
+bbox = np.array([int(width/2-height/2), 0, width - int(width/2-height/2), height])
 
 ##################
 # save directory #
@@ -87,7 +89,6 @@ while True:
 	_, bgr = video_stream.read()
 	
 	# process the frame
-	bbox = np.array([80,0,560,480])
 	bgr_crop, K_crop = utils.crop_img_by_bbox(bgr, bbox, K = K_full, crop_size = 512)
 	markerCorners, markerIds, _ = cv2.aruco.detectMarkers(bgr_crop, charucodict)
 	cv2.aruco.drawDetectedMarkers(bgr_crop, markerCorners, markerIds)

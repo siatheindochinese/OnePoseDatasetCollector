@@ -32,7 +32,8 @@ ml = cfg['ml']
 ids = cfg['ids']
 charucodict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 board = cv2.aruco.CharucoBoard((3,3),sl,ml,charucodict,np.array([ids]))
-origin_offset = np.array([[-300,-300,0]])
+axis_offset = -int(sl * 3/2)
+origin_offset = np.array([[axis_offset,axis_offset,0]])
 Rx180 = np.array([[ 1, 0,  0],
 				  [ 0 ,-1, 0],
 				  [ 0 , 0, -1]])
@@ -42,9 +43,10 @@ Rx180 = np.array([[ 1, 0,  0],
 #########################
 pipe = rs.pipeline()
 rscfg = rs.config()
-width, height = 1280, 800
+width, height = 1280, 720
 rscfg.enable_stream(rs.stream.color, width, height, rs.format.bgr8, 30)
 profile = pipe.start(rscfg)
+bbox = np.array([int(width/2-height/2), 0, width - int(width/2-height/2), height])
 
 ################################
 # getting realsense intrinsics #
@@ -76,7 +78,6 @@ while True:
 	bgr = np.asanyarray(color_frame.get_data())
 	
 	# process the frame
-	bbox = np.array([240,0,1040,800])
 	bgr_crop, K_crop = utils.crop_img_by_bbox(bgr, bbox, K = K_full, crop_size = 512)
 	markerCorners, markerIds, _ = cv2.aruco.detectMarkers(bgr_crop, charucodict)
 	cv2.aruco.drawDetectedMarkers(bgr_crop, markerCorners, markerIds)
