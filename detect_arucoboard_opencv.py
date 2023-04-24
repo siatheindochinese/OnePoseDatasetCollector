@@ -105,6 +105,10 @@ while True:
 	key = cv2.waitKey(1)
 	if key == ord('q'):
 		break
+	elif key == ord('w'):
+		origin_offset[0,2] += 10
+	elif key == ord('s'):
+		origin_offset[0,2] -= 10
 	elif key == 32:
 		if markerIds is not None and rvec is not None and tvec is not None:
 			print('saving data, iter =', idx)
