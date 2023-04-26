@@ -6,6 +6,59 @@ import numpy as np
 # from the original OnePose repository         #
 ################################################
 
+def reproj(K, pose, pts_3d):
+    """ 
+    Reproj 3d points to 2d points 
+    @param K: [3, 3] or [3, 4]
+    @param pose: [3, 4] or [4, 4]
+    @param pts_3d: [n, 3]
+    """
+    assert K.shape == (3, 3) or K.shape == (3, 4)
+    assert pose.shape == (3, 4) or pose.shape == (4, 4)
+
+    if K.shape == (3, 3):
+        K_homo = np.concatenate([K, np.zeros((3, 1))], axis=1)
+    else:
+        K_homo = K
+    
+    if pose.shape == (3, 4):
+        pose_homo = np.concatenate([pose, np.array([[0, 0, 0, 1]])], axis=0)
+    else:
+        pose_homo = pose
+    
+    pts_3d = pts_3d.reshape(-1, 3)
+    pts_3d_homo = np.concatenate([pts_3d, np.ones((pts_3d.shape[0], 1))], axis=1)
+    pts_3d_homo = pts_3d_homo.T
+
+    reproj_points = K_homo @ pose_homo @ pts_3d_homo
+    reproj_points = reproj_points[:] / reproj_points[2:]
+    reproj_points = reproj_points[:2, :].T
+    return reproj_points # [n, 2]
+    
+def draw_3d_box(image, corners_2d, linewidth=3, color='g'):
+    """ Draw 3d box corners 
+    @param corners_2d: [8, 2]
+    """
+    lines = np.array([
+        [0, 1, 5, 4, 2, 3, 7, 6, 2, 2, 3, 7],
+        [1, 5, 4, 0, 3, 0, 6, 5, 1, 6, 7, 4]
+    ]).T
+
+    colors = {
+        'g': (0, 255, 0),
+        'r': (0, 0, 255),
+        'b': (255, 0, 0)
+    }
+    if color not in colors.keys():
+        color = (42, 97, 247)
+    else:
+        color = colors[color]
+    
+    for id, line in enumerate(lines):
+        pt1 = corners_2d[line[0]].astype(int)
+        pt2 = corners_2d[line[1]].astype(int)
+        cv2.line(image, tuple(pt1), tuple(pt2), color, linewidth)
+
 def rect_to_square(self, x0, y0, x1, y1):
 	w, h = (x1 - x0), (y1 - y0)
 	dw, dh = w/2, h/2

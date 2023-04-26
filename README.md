@@ -59,5 +59,13 @@ Save the image, the corresponding intrinsic matrix and the pose by pressing `spa
 
 Your dataset is saved in `out/datasets/`.
 
+#### 2.3 Controls
+1. 'w' and 's': change the height of your pose from the board
+2. 'e' and 'd': change the x-width of your bounding box.
+3. 'r' and 'f': change the y-width of your bounding box.
+4. 't' and 'g': change the height of your bounding box.
+5. 'spacebar': record your data (RGB, poses, intrinsics, bounding box).
+6. 'q': exit the program.
+
 ## Acknowledgement
 Most of the functions in `utils.py` used for cropping and obtaining post-crop intrinsics are taken from the [original OnePose repository](https://github.com/zju3dv/OnePose).

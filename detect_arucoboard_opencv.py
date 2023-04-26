@@ -49,9 +49,12 @@ charucodict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 board = cv2.aruco.CharucoBoard((3,3),sl,ml,charucodict,np.array([ids]))
 axis_offset = -int(sl * 3/2)
 origin_offset = np.array([[axis_offset,axis_offset,0]])
-Rx180 = np.array([[ 1, 0,  0],
-				  [ 0 ,-1, 0],
-				  [ 0 , 0, -1]])
+Rx180 = np.array([[ 1, 0, 0],
+				  [ 0,-1, 0],
+				  [ 0, 0,-1]])
+				  
+x, y, z, c = 100, 100, 200, 0
+bbox3d = None
 
 #############################
 # load opencv camera config #
@@ -85,6 +88,14 @@ os.makedirs(os.path.join(dataset_pth, 'poses_ba'))
 
 idx = 0				   
 while True:
+	bbox3d = np.array([[ x, y,  c],
+					   [ x, y,z+c],
+					   [ x,-y,z+c],
+					   [ x,-y,  c],
+					   [-x, y,  c],
+					   [-x, y,z+c],
+					   [-x,-y,z+c],
+					   [-x,-y,  c]])
 	# stream frame
 	_, bgr = video_stream.read()
 	
@@ -93,11 +104,21 @@ while True:
 	markerCorners, markerIds, _ = cv2.aruco.detectMarkers(bgr_crop, charucodict)
 	cv2.aruco.drawDetectedMarkers(bgr_crop, markerCorners, markerIds)
 	
+	rvec, tvec = None, None
 	if markerIds is not None:
 		objPoints, imgPoints = board.matchImagePoints(markerCorners, markerIds)
 		objPoints = objPoints + origin_offset
 		_, rvec, tvec = cv2.solvePnP(objPoints, imgPoints, K_crop, distCoeffs=None)
-		rvec = cv2.Rodrigues(cv2.Rodrigues(rvec)[0] @ Rx180)[0]
+		
+		rmat = cv2.Rodrigues(rvec)[0] @ Rx180
+		rvec = cv2.Rodrigues(rmat)[0]
+		
+		pose = np.eye(4)
+		pose[:3,:3] = rmat
+		pose[:3,3] = tvec[:,0]
+		
+		bbox2d = utils.reproj(K_crop, pose, bbox3d)
+		utils.draw_3d_box(bgr_crop, bbox2d)
 		
 		cv2.drawFrameAxes(bgr_crop, K_crop, None, rvec, tvec, 100)
 	# show the frame
@@ -107,8 +128,30 @@ while True:
 		break
 	elif key == ord('w'):
 		origin_offset[0,2] += 10
+		c -= 10
+		print('pose height changed to', origin_offset[0,2])
 	elif key == ord('s'):
 		origin_offset[0,2] -= 10
+		c += 10
+		print('pose height changed to', origin_offset[0,2])
+	elif key == ord('e'):
+		x += 10
+		print('bbox x-width changed to', 2*x)
+	elif key == ord('d'):
+		x -= 10
+		print('bbox x-width changed to', 2*x)
+	elif key == ord('r'):
+		y += 10
+		print('bbox y-width changed to', 2*y)
+	elif key == ord('f'):
+		y -= 10
+		print('bbox y-width changed to', 2*y)
+	elif key == ord('t'):
+		z += 10
+		print('bbox height changed to', z)
+	elif key == ord('g'):
+		z -= 10
+		print('bbox height changed to', z)
 	elif key == 32:
 		if markerIds is not None and rvec is not None and tvec is not None:
 			print('saving data, iter =', idx)
@@ -118,14 +161,13 @@ while True:
 			# store intrinsic
 			np.savetxt(os.path.join(dataset_pth, 'intrin_ba', str(idx)+'.txt'), K_crop_clean)
 			# store poses
-			pose = np.zeros((4,4))
-			pose[3,3] = 1
-			pose[:3,3] = np.squeeze(tvec)
-			pose[:3,:3] = cv2.Rodrigues(rvec)[0]
-			np.savetxt(os.path.join(dataset_pth, 'poses_ba', str(idx)+'.txt'),pose)
+			np.savetxt(os.path.join(dataset_pth, 'poses_ba', str(idx)+'.txt'), pose)
+			# store 2d bounding box coordinates
+			np.savetxt(os.path.join(dataset_pth, 'reproj_box', str(idx)+'.txt'), bbox2d)
 			# update index
 			idx += 1
 		else:
 			print('markers not detected, data not captured!')
 video_stream.release()
 cv2.destroyAllWindows()
+np.savetxt(os.path.join(dataset_pth, 'box3d_corners.txt'), bbox3d)
